@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String             @id @default(cuid())
+  name         String
+  email        String             @unique
+  password     String
+  role         Role               @default(USER)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  events       Event[]            @relation("createdEvents")
+  participants EventParticipant[]
+}
+
+model Event {
+  id           String             @id @default(cuid())
+  title        String
+  description  String
+  status       EventStatus        @default(ACTIVE)
+  createdBy    User               @relation("createdEvents", fields: [createdById], references: [id], onDelete: Cascade)
+  createdById  String
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  participants EventParticipant[]
+  messages     Message[]
+}
+
+model EventParticipant {
+  id       String   @id @default(cuid())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  event    Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId  String
+  joinedAt DateTime @default(now())
+
+  @@unique([userId, eventId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  userId    String
+  userName  String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum EventStatus {
+  ACTIVE
+  CLOSED
+  ARCHIVED
+}
